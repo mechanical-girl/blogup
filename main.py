@@ -4,11 +4,10 @@ from __future__ import annotations
 import json
 import pprint
 import sys
-import time
 from typing import Any
 from typing import TypedDict
 
-import pytumblr
+import pytumblr2
 import requests_oauthlib
 from requests_oauthlib import OAuth1Session
 
@@ -91,12 +90,14 @@ def get_saved_creds() -> dict[str, CredentialSet]:
 
 
 def create_client(cred: CredentialSet) -> Any:
-    client = pytumblr.TumblrRestClient(
+    client = pytumblr2.TumblrRestClient(
         cred["consumer_key"],
         cred["consumer_secret"],
         cred["oauth_token"],
         cred["oauth_secret"],
     )
+
+    client.npf_consumption_on()
 
     return client
 
@@ -141,7 +142,7 @@ def backup() -> None:
 
     if len(creds.keys()) > 1:
         print(
-            f"You have multiple credentials saved. Please select which one to backup [{creds.keys()[0]}]: ",
+            f"You have multiple credentials saved. Please select which one to backup [{list(creds.keys())[0]}]: ",
         )
         for i, blog_name in enumerate(creds.keys()):
             print(f"{i}) {blog_name}\n")
@@ -174,6 +175,7 @@ def backup() -> None:
     offset = 0
     limit = 20
 
+    """
     print("Beginning follower backup...")
     while len(this_backup["following"]) < num_following:
         print(f"Requesting batch {int(offset/20)+1} of {int(num_following/20)+1}.")
@@ -212,10 +214,21 @@ def backup() -> None:
         except KeyError:
             break
     print(f"Finished likes backup, backed up {len(this_backup['likes'])} of {num_likes}.")
-
+    """
 
     print("Beginning posts backup...")
-    pprint.pprint(client.posts(blog_to_backup, limit=2))
+
+    this_batch = client.posts(blog_to_backup)["posts"]
+    for post in this_batch:
+        save_data = {}
+        
+        save_data["content"] = post["content"]
+        save_data["trail"] = post["trail"]
+        if "parent_post_url" in post:
+            
+        pprint.pprint(post)
+        sys.exit()
+
     with open(f"{blog_to_backup}.json", "w") as f:
         f.write(json.dumps(this_backup))
 
@@ -227,7 +240,7 @@ BlogUp - Back Up Your Tumblr Blog
 
 Please run with the register or backup argument.""")
         sys.exit()
-    
+
     if sys.argv[1] == "register":
         register()
     elif sys.argv[1] == "backup":
