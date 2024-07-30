@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import pprint
+import time
 import sys
 from typing import Any
 from typing import TypedDict
@@ -216,18 +217,28 @@ def backup() -> None:
     print(f"Finished likes backup, backed up {len(this_backup['likes'])} of {num_likes}.")
     """
 
+    # Posts
+    num_posts = client_info["user"]["likes"]
     print("Beginning posts backup...")
 
     this_batch = client.posts(blog_to_backup)["posts"]
     for post in this_batch:
         save_data = {}
-        
-        save_data["content"] = post["content"]
-        save_data["trail"] = post["trail"]
-        if "parent_post_url" in post:
-            
         pprint.pprint(post)
-        sys.exit()
+
+        # Reblogs
+        if "parent_post_url" in post:
+            save_data["content"] = post["content"]
+            save_data["layout"] = post["layout"]
+
+            save_data["reblog_key"] = post["reblog_key"]
+            save_data["reblog_blog"] = post["trail"][-1]["blog"]["name"]
+            save_data["reblog_uuid"] = post["trail"][-1]["blog"]["uuid"]
+            save_data["post_id"] = post["trail"][-1]["post"]["id"]
+
+            client.reblog_post(blog_to_backup, save_data["reblog_blog"], save_data["post_id"], content=save_data["content"], layout=save_data["layout"], parent_blog_uuid=save_data["reblog_uuid"], reblog_key=save_data["reblog_key"])
+
+        time.sleep(1)
 
     with open(f"{blog_to_backup}.json", "w") as f:
         f.write(json.dumps(this_backup))
