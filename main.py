@@ -19,6 +19,8 @@ class CredentialSet(TypedDict):
     oauth_token: str
     oauth_secret: str
 
+
+
 def get_oauth(cred: CredentialSet) -> tuple[str, str]:
     """Get oauth tokens for given creds."""
     request_token_url = "http://www.tumblr.com/oauth/request_token"
@@ -211,11 +213,21 @@ def backup() -> None:
             break
     print(f"Finished likes backup, backed up {len(this_backup['likes'])} of {num_likes}.")
 
+
+    print("Beginning posts backup...")
+    pprint.pprint(client.posts(blog_to_backup, limit=2))
     with open(f"{blog_to_backup}.json", "w") as f:
         f.write(json.dumps(this_backup))
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        print("""
+BlogUp - Back Up Your Tumblr Blog
+
+Please run with the register or backup argument.""")
+        sys.exit()
+    
     if sys.argv[1] == "register":
         register()
     elif sys.argv[1] == "backup":
